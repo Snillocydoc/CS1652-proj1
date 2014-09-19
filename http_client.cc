@@ -39,16 +39,19 @@ int main(int argc, char * argv[]) {
 	/* UNCOMMENT FOR MINET 
 	 * minet_init(MINET_KERNEL);
          */
+	minet_init(MINET_KERNEL);	
     } else if (toupper(*(argv[1])) == 'U') { 
 	/* UNCOMMENT FOR MINET 
 	 * minet_init(MINET_USER);
 	 */
+	minet_init(MINET_USER);
     } else {
 	fprintf(stderr, "First argument must be k or u\n");
 	exit(-1);
     }
 
     /* make socket */
+	minet_socket(SOCK_STREAM);
 
     /* get host IP address  */
     /* Hint: use gethostbyname() */
