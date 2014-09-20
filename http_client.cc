@@ -64,9 +64,9 @@ int main(int argc, char * argv[]) {
 	myaddr.sin_family=AF_INET;
 	memcpy(&myaddr.sin_addr.s_addr,host->h_addr,host->length);
 	myaddr.sin_port=htons(server_port);
-	minet_bind(
 
     /* connect to the server socket */
+	minet_connect(socket, (struct sockaddr_in*)&myaddr);
 
     /* send request message */
     sprintf(req, "GET %s HTTP/1.0\r\n\r\n", server_path);
