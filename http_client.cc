@@ -1,6 +1,7 @@
 /* UNCOMMENT FOR MINET 
- * #include "minet_socket.h"
- */
+*/
+ #include "minet_socket.h"
+
 
 #include <stdio.h>
 #include <string.h>
@@ -16,6 +17,8 @@
 int main(int argc, char * argv[]) {
 
     char * server_name = NULL;
+    struct hostent *host=malloc(sizeof(struct hostent));
+    struct sockaddr_in myaddr;
     int server_port    = -1;
     char * server_path = NULL;
     char * req         = NULL;
@@ -51,12 +54,17 @@ int main(int argc, char * argv[]) {
     }
 
     /* make socket */
-	minet_socket(SOCK_STREAM);
+	int socket=minet_socket(SOCK_STREAM);
 
     /* get host IP address  */
     /* Hint: use gethostbyname() */
+	host=gethostbyname(server_name);
 
     /* set address */
+	myaddr.sin_family=AF_INET;
+	memcpy(&myaddr.sin_addr.s_addr,host->h_addr,host->length);
+	myaddr.sin_port=htons(server_port);
+	minet_bind(
 
     /* connect to the server socket */
 
