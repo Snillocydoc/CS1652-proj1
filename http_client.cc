@@ -17,7 +17,7 @@
 int main(int argc, char * argv[]) {
 
     char * server_name = NULL;
-    struct hostent *host=malloc(sizeof(struct hostent));
+    struct hostent *host=(struct hostent*)malloc(sizeof(struct hostent));
     struct sockaddr_in myaddr;
     int server_port    = -1;
     char * server_path = NULL;
@@ -39,14 +39,10 @@ int main(int argc, char * argv[]) {
 
     /* initialize */
     if (toupper(*(argv[1])) == 'K') { 
-	/* UNCOMMENT FOR MINET 
-	 * minet_init(MINET_KERNEL);
-         */
+         
 	minet_init(MINET_KERNEL);	
     } else if (toupper(*(argv[1])) == 'U') { 
-	/* UNCOMMENT FOR MINET 
-	 * minet_init(MINET_USER);
-	 */
+	
 	minet_init(MINET_USER);
     } else {
 	fprintf(stderr, "First argument must be k or u\n");
@@ -62,7 +58,7 @@ int main(int argc, char * argv[]) {
 
     /* set address */
 	myaddr.sin_family=AF_INET;
-	memcpy(&myaddr.sin_addr.s_addr,host->h_addr,host->length);
+	memcpy(&myaddr.sin_addr.s_addr,host->h_addr,host->h_length);
 	myaddr.sin_port=htons(server_port);
 
     /* connect to the server socket */
@@ -73,7 +69,7 @@ int main(int argc, char * argv[]) {
 
     /* wait till socket can be read. */
     /* Hint: use select(), and ignore timeout for now. */
-
+	minet_select(1,NULL,NULL,NULL,NULL);
     /* first read loop -- read headers */
 
     /* examine return code */   
