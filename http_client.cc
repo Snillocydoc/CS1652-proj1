@@ -26,7 +26,8 @@ int main(int argc, char * argv[]) {
     int socket;
     char * server_path = NULL;
     char * req         = NULL;
-    char * buf         = (char *)malloc(20);
+    char * token;
+    char buf[BUFSIZE];
     bool ok            = false;
 	
 	
@@ -71,6 +72,7 @@ int main(int argc, char * argv[]) {
 	}
 	
     /* set address */
+	memset(&myaddr,0,sizeof(myaddr));
 	myaddr.sin_family=AF_INET;
 	memcpy(&myaddr.sin_addr.s_addr,host->h_addr,host->h_length);
 	myaddr.sin_port=htons(server_port);
@@ -91,7 +93,10 @@ int main(int argc, char * argv[]) {
 	minet_select(1,&fd,NULL,NULL,NULL);
 //fflush(stdout);
     /* first read loop -- read headers */
-	minet_read(socket, buf, 20);
+	minet_read(socket,buf,BUFSIZE);
+	token=strtok(buf," ");	
+	while(strcmp(token,"\n")!=0)
+
     /* examine return code */  
 	 
 
