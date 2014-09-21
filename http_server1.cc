@@ -18,6 +18,8 @@
 int handle_connection(int sock);
 
 int main(int argc, char * argv[]) {
+	struct sockaddr_in saddr;
+	char buf[BUFSIZE];
     int server_port = -1;
     int rc          =  0;
     int sock        = -1;
@@ -51,10 +53,21 @@ int main(int argc, char * argv[]) {
 
 
     /* initialize and make socket */
-
+	if((sock=minet_socket(SOCK_STREAM))<0){
+		fprintf(stderr, "Socket creation failed\n");
+		exit(-1);
+	}
     /* set server address*/
+	memset(&saddr,0,sizeof(saddr));
+	saddr.sin_family=AF_INET;
+	saddr.sin_addr.saddr=INADDR_ANY;
+	saddr.sin_port=htons(server_port);
 
     /* bind listening socket */
+	if(minet_bind(sock,(struct sockaddr_in*)&saddr)<0){
+		fprintf(stderr, "Binding failed\n");
+		exit(-1);
+	}
 
     /* start listening */
 
