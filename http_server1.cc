@@ -70,6 +70,10 @@ int main(int argc, char * argv[]) {
 	}
 
     /* start listening */
+	if(minet_listen(sock,32)<0){
+		fprintf(stderr, "Listen failed\n");
+		exit(-1);
+	}
 
     /* connection handling loop: wait to accept connection */
 
