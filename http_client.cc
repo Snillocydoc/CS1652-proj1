@@ -76,7 +76,10 @@ int main(int argc, char * argv[]) {
 	myaddr.sin_port=htons(server_port);
 
     /* connect to the server socket */
-	minet_connect(socket, (struct sockaddr_in*)&myaddr);
+	if(minet_connect(socket, (struct sockaddr_in*)&myaddr)<0){
+		fprintf(stderr, "Connection failed\n");
+		exit(-1);
+	}
 	
     /* send request message */
     sprintf(req, "GET %s HTTP/1.0\r\n\r\n", server_path);
