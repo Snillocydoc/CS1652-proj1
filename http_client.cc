@@ -59,13 +59,16 @@ int main(int argc, char * argv[]) {
 
     /* make socket */
 	if((socket=minet_socket(SOCK_STREAM))<0){
-		fprintf(stderr, "First argument must be k or u\n");
+		fprintf(stderr, "Socket creation failed\n");
 		exit(-1);
 	}
 	
     /* get host IP address  */
     /* Hint: use gethostbyname() */
-	host=gethostbyname(server_name);
+	if((host=gethostbyname(server_name))<0){
+		fprintf(stderr, "Getting host by name failed\n");
+		exit(-1);
+	}
 	
     /* set address */
 	myaddr.sin_family=AF_INET;
