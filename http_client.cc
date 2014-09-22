@@ -1,6 +1,6 @@
 /* UNCOMMENT FOR MINET 
 */
- #include "minet_socket.h"
+#include "minet_socket.h"
 
 
 #include <stdio.h>
@@ -24,6 +24,8 @@ int main(int argc, char * argv[]) {
     struct sockaddr_in myaddr;
     int server_port    = -1;
     int socket;
+    int http_status    = -1;
+    char * http
     char * server_path = NULL;
     char * req         = NULL;
     char * token;
@@ -95,7 +97,18 @@ int main(int argc, char * argv[]) {
     /* first read loop -- read headers */
 	minet_read(socket,buf,BUFSIZE);
 	token=strtok(buf," ");	
-	while(strcmp(token,"\n")!=0)
+	if(strncmp(token,"HTTP/",5)==0)
+		token=strtok(NULL," ");
+	if(strcmp(token,"200")==0){
+	
+	}
+	else{
+
+	}
+
+		
+	
+		
 
     /* examine return code */  
 	 
@@ -106,9 +119,10 @@ int main(int argc, char * argv[]) {
     // Normal reply has return code 200
 
     /* print first part of response: header, error code, etc. */
-	buf[19]=0;
-	printf("received: %s",buf);
-    /* second read loop -- print out the rest of the response: real web content */
+	printf("%s",buf);
+	while(minet_read(socket,buf,BUFSIZE)>0)
+		printf("%s",buf);
+    /* second read loop -- print out the rest of the response: real web	 content */
 
     /*close socket and deinitialize */
 
