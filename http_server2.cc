@@ -18,6 +18,9 @@
 int handle_connection(int sock);
 
 int main(int argc, char * argv[]) {
+	struct sockaddr_in saddr;
+	char buf[BUFSIZE];
+	int listen_fd=-1;
     int server_port = -1;
     int rc          =  0;
     int sock        = -1;
