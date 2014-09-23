@@ -87,7 +87,8 @@ int main(int argc, char * argv[]) {
 
 int handle_connection(int sock) {
     bool ok = false;
-
+	char buf[BUFSIZE];
+	char filename[FILENAMESIZE];
     const char * ok_response_f = "HTTP/1.0 200 OK\r\n"	\
 	"Content-type: text/plain\r\n"			\
 	"Content-length: %d \r\n\r\n";
@@ -99,9 +100,12 @@ int handle_connection(int sock) {
 	"</body></html>\n";
     
     /* first read loop -- get request and headers*/
+	minet_read(sock,buf,BUFSIZE);
     
     /* parse request to get file name */
     /* Assumption: this is a GET request and filename contains no spaces*/
+
+	filename=strtok(NULL,"GET ");
 
     /* try opening the file */
 
