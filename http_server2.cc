@@ -53,13 +53,26 @@ int main(int argc, char * argv[]) {
     }
 
     /* initialize and make socket */
-
+	if((listen_fd=minet_socket(SOCK_STREAM))<0){
+		fprintf(stderr, "Socket creation failed\n");
+		exit(-1);
+	}
     /* set server address*/
+	memset(&saddr,0,sizeof(saddr));
+	saddr.sin_family=AF_INET;
+	saddr.sin_addr.saddr=htonl(INADDR_ANY);
+	saddr.sin_port=htons(server_port);
 
     /* bind listening socket */
-
+	if(minet_bind(listen_fd,(struct sockaddr_in*)&saddr)<0){
+		fprintf(stderr, "Binding failed\n");
+		exit(-1);
+	}
     /* start listening */
-
+	if(minet_listen(listen_fd,32)<0){
+		fprintf(stderr, "Listen failed\n");
+		exit(-1);
+	}
     /* connection handling loop: wait to accept connection */
 
     while (1) {
