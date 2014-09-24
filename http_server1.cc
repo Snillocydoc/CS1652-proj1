@@ -136,11 +136,16 @@ int handle_connection(int sock) {
 	
 	
 	/* send file */
+	
+	//get file size
 	fseek(fd,0,SEEK_END);
 	f_size=ftell(fd);
 	fseek(fd,0,SEEK_SET);
+	
+	//write size to socket
 	minet_write(sock,(char *)&f_size,sizeof(int));
 	
+	//read content from file to buffer, then write buffer to the socket
 	content=(char*)malloc(f_size);
 	fread(content,f_size,1,fd);
 	minet_write(sock,content,f_size);

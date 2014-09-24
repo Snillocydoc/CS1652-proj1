@@ -21,6 +21,7 @@ int main(int argc, char * argv[]) {
 	struct sockaddr_in saddr;
 	char buf[BUFSIZE];
 	int listen_fd=-1;
+	std::list<int> connections
     int server_port = -1;
     int rc          =  0;
     int sock        = -1;
@@ -60,7 +61,7 @@ int main(int argc, char * argv[]) {
     /* set server address*/
 	memset(&saddr,0,sizeof(saddr));
 	saddr.sin_family=AF_INET;
-	saddr.sin_addr.saddr=htonl(INADDR_ANY);
+	saddr.sin_addr.s_addr=htonl(INADDR_ANY);
 	saddr.sin_port=htons(server_port);
 
     /* bind listening socket */
@@ -94,6 +95,13 @@ int main(int argc, char * argv[]) {
 
 int handle_connection(int sock) {
     bool ok = false;
+	char buf[BUFSIZE];
+	char *content;
+	char* filename=(char*)malloc(FILENAMESIZE);
+	FILE * fd;
+	int f_size=0;
+	int counter=0;
+	int bytes_read=0;
 
     const char * ok_response_f = "HTTP/1.0 200 OK\r\n"	\
 	"Content-type: text/plain\r\n"			\
@@ -106,20 +114,48 @@ int handle_connection(int sock) {
 	"</body></html>\n";
     
     /* first read loop -- get request and headers*/
-
+	if(minet_read(sock,buf,BUFSIZE)<=0){
+		fprintf(stderr, "Read failed\n");
+		exit(-1);
+	}
     /* parse request to get file name */
     /* Assumption: this is a GET request and filename contains no spaces*/
-
+	filename=strtok(buf,"GET ");
     /* try opening the file */
+	if((fd = fopen(filename,"rb"))>0){
+		ok=true;
 
-    /* send response */
+	}
+	else{
+		ok=false;
+	}
+    //* send response */
     if (ok) {
 	/* send headers */
+	if(minet_write(sock,(char *)ok_response_f,strlen(ok_response_f))<0){
+		fprintf(stderr,"Write failed\n");
+		exit(-1);
+	}
 	
 	/* send file */
+	//get file size
+	fseek(fd,0,SEEK_END);
+	f_size=ftell(fd);
+	fseek(fd,0,SEEK_SET);
 	
+	//write size to socket
+	minet_write(sock,(char *)&f_size,sizeof(int));
+	
+	//read content from file to buffer, then write buffer to the socket
+	content=(char*)malloc(f_size);
+	fread(content,f_size,1,fd);
+	minet_write(sock,content,f_size);
     } else {
 	// send error response
+	if(minet_write(sock,(char*)notok_response,strlen(notok_response))<0){
+		fprintf(stderr,"Write failed\n");
+		exit(-1);
+	}
     }
 
     /* close socket and free space */
