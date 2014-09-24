@@ -25,7 +25,7 @@ int main(int argc, char * argv[]) {
     int server_port    = -1;
     int socket;
     int http_status    = -1;
-    char * http
+    
     char * server_path = NULL;
     char * req         = NULL;
     char * token;
@@ -78,33 +78,37 @@ int main(int argc, char * argv[]) {
 	myaddr.sin_family=AF_INET;
 	memcpy(&myaddr.sin_addr.s_addr,host->h_addr,host->h_length);
 	myaddr.sin_port=htons(server_port);
-
+	printf("hi");
     /* connect to the server socket */
 	if(minet_connect(socket, (struct sockaddr_in*)&myaddr)<0){
 		fprintf(stderr, "Connection failed\n");
 		exit(-1);
 	}
-	
+	printf("hi");
     /* send request message */
     sprintf(req, "GET %s HTTP/1.0\r\n\r\n", server_path);
-
+	printf("hi");
+	if(minet_write(socket,req,strlen(req))<0){
+		fprintf(stderr,"Write failed\n");
+		exit(-1);
+	}
+	
     /* wait till socket can be read. */
     /* Hint: use select(), and ignore timeout for now. */
-	FD_ZERO(&fd);
 	FD_SET(socket,&fd);
-	minet_select(1,&fd,NULL,NULL,NULL);
+	fflush(stdout);
+	minet_select(socket+1,&fd,NULL,NULL,NULL);
+	
 //fflush(stdout);
     /* first read loop -- read headers */
 	minet_read(socket,buf,BUFSIZE);
+	//printf("%s",buf);
 	token=strtok(buf," ");	
-	if(strncmp(token,"HTTP/",5)==0)
-		token=strtok(NULL," ");
-	if(strcmp(token,"200")==0){
+	if(strncmp(token,"HTTP/",5)==0){
+		token=strtok(NULL,"\0 ");
+		//printf("%s",buf);
+	}
 	
-	}
-	else{
-
-	}
 
 		
 	
@@ -120,12 +124,14 @@ int main(int argc, char * argv[]) {
 
     /* print first part of response: header, error code, etc. */
 	printf("%s",buf);
-	while(minet_read(socket,buf,BUFSIZE)>0)
+	while(minet_read(socket,buf,BUFSIZE)>0){
+		
 		printf("%s",buf);
+	}
     /* second read loop -- print out the rest of the response: real web	 content */
 
     /*close socket and deinitialize */
-
+	
     if (ok) {
 	return 0;
     } else {
