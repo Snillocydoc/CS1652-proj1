@@ -126,12 +126,11 @@ int main(int argc, char * argv[]) {
 
 		content=(char*)malloc(f_size);
 		FD_SET(socket,&fd);
-printf("%d",f_size);
-fflush(stdout);
-		//if(minet_select(socket+1,&fd,NULL,NULL,NULL)<0){
-		//	minet_perror("Error");
-		//	exit(-1);	
-		//}
+
+		if(minet_select(socket+1,&fd,NULL,NULL,NULL)<0){
+			minet_perror("Error");
+			exit(-1);	
+		}
 
 		if(minet_read(socket,content,f_size)<0){
 			minet_perror("Error");

@@ -21,7 +21,6 @@ int main(int argc, char * argv[]) {
 	struct sockaddr_in saddr;
 	char buf[BUFSIZE];
 	int listen_fd=-1;
-	std::list<int> connections
     int server_port = -1;
     int rc          =  0;
     int sock        = -1;
@@ -79,11 +78,17 @@ int main(int argc, char * argv[]) {
     while (1) {
 	
 	/* create read list */
+	fd_set descriptors;
+	int counter=0;
 	
 	/* do a select */
-	
+	minet_select(listen_fd+1,&descriptors,NULL,NULL,NULL);
 	/* process sockets that are ready */
-	
+	for(counter=0;counter<listen_fd;counter++){
+		if(FD_ISSET(counter,&descriptors)){
+
+		}
+	}
 	/* for the accept socket, add accepted connection to connections */
 	
 	/* for a connection socket, handle the connection */
