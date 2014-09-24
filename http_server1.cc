@@ -88,8 +88,12 @@ int main(int argc, char * argv[]) {
 int handle_connection(int sock) {
     bool ok = false;
 	char buf[BUFSIZE];
+	char *content;
 	char* filename=(char*)malloc(FILENAMESIZE);
 	FILE * fd;
+	int f_size=0;
+	int counter=0;
+	int bytes_read=0;
     const char * ok_response_f = "HTTP/1.0 200 OK\r\n"	\
 	"Content-type: text/plain\r\n"			\
 	"Content-length: %d \r\n\r\n";
@@ -125,14 +129,28 @@ int handle_connection(int sock) {
     /* send response */
     if (ok) {
 	/* send headers */
-	minet_write(sock,(char *)ok_response_f,strlen(ok_response_f));
+	if(minet_write(sock,(char *)ok_response_f,strlen(ok_response_f))<0){
+		fprintf(stderr,"Write failed\n");
+		exit(-1);
+	}
 	
 	
 	/* send file */
+	fseek(fd,0,SEEK_END);
+	f_size=ftell(fd);
+	fseek(fd,0,SEEK_SET);
+	minet_write(sock,(char *)&f_size,sizeof(int));
+	
+	content=(char*)malloc(f_size);
+	fread(content,f_size,1,fd);
+	minet_write(sock,content,f_size);
 	
     } else {
 	// send error response
-	minet_write(sock,(char*)notok_response,strlen(notok_response));
+	if(minet_write(sock,(char*)notok_response,strlen(notok_response))<0){
+		fprintf(stderr,"Write failed\n");
+		exit(-1);
+	}
     }
     
     /* close socket and free space */
