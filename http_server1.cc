@@ -148,7 +148,10 @@ int handle_connection(int sock) {
 	//read content from file to buffer, then write buffer to the socket
 	content=(char*)malloc(f_size);
 	fread(content,f_size,1,fd);
-	minet_write(sock,content,f_size);
+	while(total_written<f_size){
+		total_written+=minet_write(sock,content+total_written,f_size-total_written);
+		printf("Written: %d\n",total_written);
+	}
 	
     } else {
 	// send error response

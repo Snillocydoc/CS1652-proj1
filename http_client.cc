@@ -114,6 +114,7 @@ int main(int argc, char * argv[]) {
     /* second read loop -- print out the rest of the response: real web	 content */
 	if(ok){
 		int f_size=0;
+		int total_read=0;
 		char * content;
 		
 		FD_SET(socket,&fd);
@@ -123,21 +124,29 @@ int main(int argc, char * argv[]) {
 			minet_perror("Error");
 			exit(-1);	
 		}
-
+		printf("FSIZE: %d\n", f_size);
 		content=(char*)malloc(f_size);
-		FD_SET(socket,&fd);
+		
 
-		if(minet_select(socket+1,&fd,NULL,NULL,NULL)<0){
-			minet_perror("Error");
-			exit(-1);	
+		
+		while(total_read<f_size){
+			int change=total_read;
+			
+			if(minet_select(socket+1,&fd,NULL,NULL,NULL)<0){
+				minet_perror("Error");
+				exit(-1);	
+			}
+			
+			total_read+=minet_read(socket,(content+total_read),(f_size-total_read));
+			if(change>total_read){
+				minet_perror("Error");
+				exit(-1);	
+			}
+			//printf("%s",content);
 		}
-
-		if(minet_read(socket,content,f_size)<0){
-			minet_perror("Error");
-			exit(-1);	
-		}
-
 		printf("%s",content);
+		printf("Read: %d\n",total_read);
+
 		free(content);
 	}
     /*close socket and deinitialize */
