@@ -124,7 +124,6 @@ int main(int argc, char * argv[]) {
 			minet_perror("Error");
 			exit(-1);	
 		}
-		printf("FSIZE: %d\n", f_size);
 		content=(char*)malloc(f_size);
 		
 
@@ -142,11 +141,9 @@ int main(int argc, char * argv[]) {
 				minet_perror("Error");
 				exit(-1);	
 			}
-			//printf("%s",content);
+			
 		}
 		printf("%s",content);
-		printf("Read: %d\n",total_read);
-
 		free(content);
 	}
     /*close socket and deinitialize */

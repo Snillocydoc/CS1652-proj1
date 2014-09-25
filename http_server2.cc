@@ -89,30 +89,24 @@ int main(int argc, char * argv[]) {
 	int new_fd=0;
 	/* do a select */
 
-	//FD_ZERO(&descriptors);
+	
 
 	minet_select(total_fds+1,&descriptors,NULL,NULL,NULL);
 
 	/* process sockets that are ready */
 	for(counter=0;counter<=total_fds;counter++){
-printf("hi");
+
 		/* for the accept socket, add accepted connection to connections */
 		if(FD_ISSET(counter,&descriptors)&&counter==listen_fd){
-printf("hi4");
-fflush(stdout);
 
 			new_fd=minet_accept(listen_fd,NULL);
 			FD_SET(new_fd,&descriptors);
-			if(new_fd>total_fds)
-			printf("%d",new_fd);
-			fflush(stdout);
+			
 			if(new_fd>total_fds)
 				total_fds=new_fd;
 		}
 		/* for a connection socket, handle the connection */
 		else if(FD_ISSET(counter,&descriptors)) {
-printf("hi5");
-fflush(stdout);
 
 			rc = handle_connection(counter);
 			FD_CLR(counter,&descriptors);
@@ -179,17 +173,33 @@ int handle_connection(int sock) {
 	fseek(fd,0,SEEK_END);
 	f_size=ftell(fd);
 	fseek(fd,0,SEEK_SET);
-	printf("FSIZE: %d\n",f_size);
-	//write size to socket
-	minet_write(sock,(char *)&f_size,sizeof(int));
 	
-	//read content from file to buffer, then write buffer to the socket
-	content=(char*)malloc(f_size);
-	fread(content,f_size,1,fd);
-	while(total_written<f_size){
-		total_written+=minet_write(sock,content+total_written,f_size-total_written);
-		printf("Written: %d\n",total_written);
+	//write size to socket
+	if(minet_write(sock,(char *)&f_size,sizeof(int))<0){
+		fprintf(stderr,"Write failed\n");
+		exit(-1);
 	}
+	
+	//read content from file to content buffer
+	if((content=(char*)malloc(f_size))==NULL){
+		fprintf(stderr,"Malloc failed\n");
+		exit(-1);
+	}
+	if(fread(content,f_size,1,fd)<0){
+		fprintf(stderr,"File read failed\n");
+		exit(-1);
+	}	
+
+	//write from content buffer to the current connection socket
+	while(total_written<f_size){
+		int change=total_written;
+		total_written+=minet_write(sock,content+total_written,f_size-total_written);
+		if(total_written<change){
+			fprintf(stderr,"Write to connection socket failed\n");
+			exit(-1);
+		}
+	}
+
     } else {
 	// send error response
 	if(minet_write(sock,(char*)notok_response,strlen(notok_response))<0){
