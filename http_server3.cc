@@ -93,6 +93,11 @@ int main(int argc, char * argv[]) {
 	FD_SET(listen_fd,&descriptors);
 
     /* set server address*/
+	memset(&saddr,0,sizeof(saddr));
+	saddr.sin_family=AF_INET;
+	saddr.sin_addr.s_addr=htonl(INADDR_ANY);
+	saddr.sin_port=htons(server_port);
+
 
     /* bind listening socket */
 
