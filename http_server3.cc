@@ -100,8 +100,16 @@ int main(int argc, char * argv[]) {
 
 
     /* bind listening socket */
+	if(minet_bind(listen_fd,(struct sockaddr_in*)&saddr)<0){
+		fprintf(stderr, "Binding failed\n");
+		exit(-1);
+	}
 
     /* start listening */
+	if(minet_listen(listen_fd,32)<0){
+		fprintf(stderr, "Listen failed\n");
+		exit(-1);
+	}
 
     /* connection handling loop */
 
