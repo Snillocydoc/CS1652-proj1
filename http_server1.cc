@@ -153,7 +153,7 @@ int handle_connection(int sock) {
 		fprintf(stderr,"File read failed\n");
 		exit(-1);
 	}	
-
+	fclose(fd);
 	
 //write from content buffer to the current connection socket
 	while(total_written<f_size){
