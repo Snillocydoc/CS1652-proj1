@@ -85,6 +85,12 @@ int main(int argc, char * argv[]) {
 
 
     /* initialize and make socket */
+	if((listen_fd=minet_socket(SOCK_STREAM))<0){
+		fprintf(stderr, "Socket creation failed\n");
+		exit(-1);
+	}
+	total_fds=listen_fd;
+	FD_SET(listen_fd,&descriptors);
 
     /* set server address*/
 
