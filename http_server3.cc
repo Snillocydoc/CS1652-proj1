@@ -26,8 +26,8 @@ typedef struct connection_s connection;
 
 struct connection_s {
     int sock;
-    int fd;
-    char filename[FILENAMESIZE + 1];
+    FILE* fd;
+    char * filename;
     char buf[BUFSIZE + 1];
     char * endheaders;
     bool ok;
@@ -49,13 +49,11 @@ void write_file(connection * con);
 
 int main(int argc, char * argv[]) {
 	struct sockaddr_in saddr;
-	char buf[BUFSIZE];
-	int listen_fd=-1;
-	
 	fd_set read_fds;
 	fd_set write_fds;
 	connection *listen=(connection *)malloc(sizeof(connection));
 	connection *max;
+	connection *last;
     int server_port = -1;
 
     /* parse command line args */
@@ -92,8 +90,9 @@ int main(int argc, char * argv[]) {
 		fprintf(stderr, "Socket creation failed\n");
 		exit(-1);
 	}
-	
+	listen->next=NULL;
 	max=listen;
+	last=listen;
 	FD_SET(listen->sock,&read_fds);
 
     /* set server address*/
@@ -120,32 +119,48 @@ int main(int argc, char * argv[]) {
     while (1) {
 	/* create read and write lists */
 	
-	int counter=0;
+	
 	connection* node_conn;
 	connection *new_conn;
 	FD_SET(listen->sock,&read_fds);
 	/* do a select */
-	minet_select(max->sock+1,&read_fds,&write_fds,NULL,NULL);
-	
+	minet_select(max->sock+1,&read_fds,NULL,NULL,NULL);
+
 	/* process sockets that are ready */
 	node_conn=listen;
-	while(node_conn!=NULL)
+	while(node_conn!=NULL){
+
+		FD_SET(listen->sock,&read_fds);
+		minet_select(max->sock+1,&read_fds,NULL,NULL,NULL);
 		if(FD_ISSET(node_conn->sock,&read_fds)&&node_conn->sock==listen->sock){
-			new_conn=(connection*)malloc(sizeof(connection));
-			max->next=new_conn;
-			max=max->next;
-			new_conn->sock=minet_accept(listen->sock,NULL);
-			FD_SET(new_conn->sock,&read_fds);
-			FD_SET(new_conn->sock,&write_fds);
+
+printf("listen");
+fflush(stdout);
+			last->next=(connection*)malloc(sizeof(connection));
+			last->next->next=NULL;
+			last=last->next;
+			last->sock=minet_accept(listen->sock,NULL);
+			FD_SET(last->sock,&read_fds);
+			FD_SET(last->sock,&write_fds);
+			if(last->sock>max->sock){
+				max=last;
+			}
 			
 		}
-		else if(FD_ISSET(node_conn->sock,&read_fds)&&node_conn!=listen){
+		else if(FD_ISSET(node_conn->sock,&read_fds)&&node_conn->sock!=listen->sock){
 			read_headers(node_conn);
 			FD_CLR(node_conn->sock,&read_fds);
+			
+			printf("hello");
+			fflush(stdout);
 		}
+		//printf("hello");
+		//fflush(stdout);
+		node_conn=node_conn->next;
 	}
+   }
 	
-    }
+    
 }
 
 void read_headers(connection * con) {
@@ -167,8 +182,10 @@ void read_headers(connection * con) {
 		con->ok=true;
 		 /* set to non-blocking, get size */
 		fseek(con->fd,0,SEEK_END);
-		con->filelen=ftell(fd);
+		con->filelen=ftell(con->fd);
 		fseek(con->fd,0,SEEK_SET);
+		printf("WHAT UP");
+		fflush(stdout);
 		
 
 	}
@@ -198,6 +215,8 @@ void write_response(connection * con) {
 			fprintf(stderr,"Write failed\n");
 			exit(-1);
 		}
+		read_file(con);
+		write_file(con);
 	}
 	else{
 		// send error response
@@ -211,9 +230,31 @@ void write_response(connection * con) {
 }
 
 void read_file(connection * con) {
+	//read content from file to content buffer
+	if((con->endheaders=(char*)malloc(con->filelen))==NULL){
+		fprintf(stderr,"Malloc failed\n");
+		exit(-1);
+	}
+	if(fread(con->endheaders,con->filelen,1,con->fd)<0){
+		fprintf(stderr,"File read failed\n");
+		exit(-1);
+	}
+	fclose(con->fd);	
 
 }
 
 void write_file(connection * con) {
+	//write from content buffer to the current connection socket
+	
+	while(con->file_written<con->filelen){
+		int change=con->file_written;
+		con->file_written+=minet_write(con->sock,con->endheaders+con->file_written,BUFSIZE);
+		if(con->file_written<change){
+			fprintf(stderr,"Write to connection socket failed\n");
+			exit(-1);
+		}
+	}
+	con->file_written=0;
+	minet_close(con->sock);
  
 }
