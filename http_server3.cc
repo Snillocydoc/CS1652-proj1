@@ -52,7 +52,8 @@ int main(int argc, char * argv[]) {
 	char buf[BUFSIZE];
 	int listen_fd=-1;
 	int total_fds=0;
-	fd_set descriptors;
+	fd_set read_fds;
+	fd_set write_fds;
     int server_port = -1;
 
     /* parse command line args */
@@ -116,9 +117,25 @@ int main(int argc, char * argv[]) {
     while (1) {
 	/* create read and write lists */
 	
+	int counter=0;
+	int new_fd=0;
+	FD_SET(listen_fd,&read_fds);
 	/* do a select */
+	minet_select(total_fds+1,&read_fds,&write_fds,NULL,NULL);
 	
 	/* process sockets that are ready */
+	for(counter=0;counter<=total_fds;counter++){
+		if(FD_ISSET(counter,&read_fds)&&counter==listen_fd){
+			new_fd=minet_accept(listen_fd,NULL);
+			FD_SET(new_fd,&read_fds);
+			
+			if(new_fd>total_fds)
+				total_fds=new_fd;
+		}
+		else if(FD_ISSET(counter,&read_fds)&&counter!=listen_fd){
+
+		}
+	}
 	
     }
 }
