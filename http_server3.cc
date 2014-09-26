@@ -51,9 +51,11 @@ int main(int argc, char * argv[]) {
 	struct sockaddr_in saddr;
 	char buf[BUFSIZE];
 	int listen_fd=-1;
-	int total_fds=0;
+	
 	fd_set read_fds;
 	fd_set write_fds;
+	connection *listen=(connection *)malloc(sizeof(connection));
+	connection *max;
     int server_port = -1;
 
     /* parse command line args */
@@ -86,12 +88,13 @@ int main(int argc, char * argv[]) {
 
 
     /* initialize and make socket */
-	if((listen_fd=minet_socket(SOCK_STREAM))<0){
+	if((listen->sock=minet_socket(SOCK_STREAM))<0){
 		fprintf(stderr, "Socket creation failed\n");
 		exit(-1);
 	}
-	total_fds=listen_fd;
-	FD_SET(listen_fd,&descriptors);
+	
+	max=listen;
+	FD_SET(listen->sock,&read_fds);
 
     /* set server address*/
 	memset(&saddr,0,sizeof(saddr));
@@ -101,13 +104,13 @@ int main(int argc, char * argv[]) {
 
 
     /* bind listening socket */
-	if(minet_bind(listen_fd,(struct sockaddr_in*)&saddr)<0){
+	if(minet_bind(listen->sock,(struct sockaddr_in*)&saddr)<0){
 		fprintf(stderr, "Binding failed\n");
 		exit(-1);
 	}
 
     /* start listening */
-	if(minet_listen(listen_fd,32)<0){
+	if(minet_listen(listen->sock,32)<0){
 		fprintf(stderr, "Listen failed\n");
 		exit(-1);
 	}
@@ -118,22 +121,27 @@ int main(int argc, char * argv[]) {
 	/* create read and write lists */
 	
 	int counter=0;
-	int new_fd=0;
-	FD_SET(listen_fd,&read_fds);
+	connection* node_conn;
+	connection *new_conn;
+	FD_SET(listen->sock,&read_fds);
 	/* do a select */
-	minet_select(total_fds+1,&read_fds,&write_fds,NULL,NULL);
+	minet_select(max->sock+1,&read_fds,&write_fds,NULL,NULL);
 	
 	/* process sockets that are ready */
-	for(counter=0;counter<=total_fds;counter++){
-		if(FD_ISSET(counter,&read_fds)&&counter==listen_fd){
-			new_fd=minet_accept(listen_fd,NULL);
-			FD_SET(new_fd,&read_fds);
+	node_conn=listen;
+	while(node_conn!=NULL)
+		if(FD_ISSET(node_conn->sock,&read_fds)&&node_conn->sock==listen->sock){
+			new_conn=(connection*)malloc(sizeof(connection));
+			max->next=new_conn;
+			max=max->next;
+			new_conn->sock=minet_accept(listen->sock,NULL);
+			FD_SET(new_conn->sock,&read_fds);
+			FD_SET(new_conn->sock,&write_fds);
 			
-			if(new_fd>total_fds)
-				total_fds=new_fd;
 		}
-		else if(FD_ISSET(counter,&read_fds)&&counter!=listen_fd){
-
+		else if(FD_ISSET(node_conn->sock,&read_fds)&&node_conn!=listen){
+			read_headers(node_conn);
+			FD_CLR(node_conn->sock,&read_fds);
 		}
 	}
 	
@@ -142,18 +150,33 @@ int main(int argc, char * argv[]) {
 
 void read_headers(connection * con) {
 
+
     /* first read loop -- get request and headers*/
-
-    /* parse request to get file name */
-    /* Assumption: this is a GET request and filename contains no spaces*/
-
-    /* get file name and size, set to non-blocking */
-
-    /* get name */
-
-    /* try opening the file */
+	if(minet_read(con->sock,con->buf,BUFSIZE)<0){
+		fprintf(stderr, "Read failed\n");
+		exit(-1);
+	}
     
-    /* set to non-blocking, get size */
+	/* parse request to get file name */
+    /* Assumption: this is a GET request and filename contains no spaces*/
+    /* get file name and size, set to non-blocking */
+    /* get name */
+	con->filename=strtok(con->buf,"GET ");	
+     /* try opening the file */
+	if((con->fd = fopen(con->filename,"rb"))>0){
+		con->ok=true;
+		 /* set to non-blocking, get size */
+		fseek(con->fd,0,SEEK_END);
+		con->filelen=ftell(fd);
+		fseek(con->fd,0,SEEK_SET);
+		
+
+	}
+	else{
+		con->ok=false;
+	}
+    
+   
 
     write_response(con);
 }
@@ -170,6 +193,19 @@ void write_response(connection * con) {
 	"</body></html>\n";
     
     /* send response */
+	if(con->ok==true){
+		if(minet_write(con->sock,(char *)ok_response_f,strlen(ok_response_f))<0){
+			fprintf(stderr,"Write failed\n");
+			exit(-1);
+		}
+	}
+	else{
+		// send error response
+		if(minet_write(con->sock,(char*)notok_response,strlen(notok_response))<0){
+			fprintf(stderr,"Write failed\n");
+			exit(-1);
+		}
+	}
   
     /* send headers */
 }
