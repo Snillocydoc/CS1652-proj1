@@ -113,38 +113,34 @@ int main(int argc, char * argv[]) {
 
     /* second read loop -- print out the rest of the response: real web	 content */
 	if(ok){
-		int f_size=0;
-		int total_read=0;
-		char * content;
+		
 		
 		FD_SET(socket,&fd);
-		minet_select(socket+1,&fd,NULL,NULL,NULL);
-		memset(buf,0,BUFSIZE);
-		if(minet_read(socket,(char*)&f_size,sizeof(int))<0){
-			minet_perror("Error");
-			exit(-1);	
-		}
-		content=(char*)malloc(f_size);
 		
-
 		
-		while(total_read<f_size){
-			int change=total_read;
-			
+		while(1){
+			int read=0;
+			memset(buf,0,BUFSIZE);
 			if(minet_select(socket+1,&fd,NULL,NULL,NULL)<0){
 				minet_perror("Error");
 				exit(-1);	
 			}
 			
-			total_read+=minet_read(socket,(content+total_read),(f_size-total_read));
-			if(change>total_read){
+			if((read=minet_read(socket,buf,BUFSIZE))<0){
 				minet_perror("Error");
 				exit(-1);	
 			}
+			if(read>0){
+				printf("%s",buf);
+					
+			}
+			else{
+				break;
+			}
 			
 		}
-		printf("%s",content);
-		free(content);
+		
+		
 	}
     /*close socket and deinitialize */
 	minet_close(socket);

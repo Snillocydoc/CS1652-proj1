@@ -184,11 +184,7 @@ int handle_connection(int sock) {
 	f_size=ftell(fd);
 	fseek(fd,0,SEEK_SET);
 	
-	//write size to socket
-	if(minet_write(sock,(char *)&f_size,sizeof(int))<0){
-		fprintf(stderr,"Write failed\n");
-		exit(-1);
-	}
+	
 	
 	//read content from file to content buffer
 	if((content=(char*)malloc(f_size))==NULL){
@@ -203,7 +199,7 @@ int handle_connection(int sock) {
 	//write from content buffer to the current connection socket
 	while(total_written<f_size){
 		int change=total_written;
-		total_written+=minet_write(sock,content+total_written,f_size-total_written);
+		total_written+=minet_write(sock,content+total_written,BUFSIZE);
 		if(total_written<change){
 			fprintf(stderr,"Write to connection socket failed\n");
 			exit(-1);
