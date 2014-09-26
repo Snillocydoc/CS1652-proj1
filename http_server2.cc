@@ -1,6 +1,6 @@
 
-  #include "minet_socket.h"
- 
+/* Includes */
+#include "minet_socket.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -11,11 +11,13 @@
 #include <sys/socket.h>
 #include <netdb.h>
 
-
+/* Defines */
 #define BUFSIZE 1024
 #define FILENAMESIZE 100
 
+/* Function Prototypes */
 int handle_connection(int sock);
+
 
 int main(int argc, char * argv[]) {
 	struct sockaddr_in saddr;
@@ -33,14 +35,15 @@ int main(int argc, char * argv[]) {
 	exit(-1);
     }
 
-    server_port = atoi(argv[2]);
+    server_port = atoi(argv[2]); //Make port number an integer
 
+	/* Verify port is bindable to by assuring it is above 1500 */
     if (server_port < 1500) {
 	fprintf(stderr, "INVALID PORT NUMBER: %d; can't be < 1500\n", server_port);
 	exit(-1);
     }
     
-    /* initialize */
+	/* Choose Kernal stack or User stack based upon command line selection */
     if (toupper(*(argv[1])) == 'K') { 
 	
 	  minet_init(MINET_KERNEL);
@@ -59,6 +62,7 @@ int main(int argc, char * argv[]) {
 		fprintf(stderr, "Socket creation failed\n");
 		exit(-1);
 	}
+	
 	total_fds=listen_fd;
 	FD_SET(listen_fd,&descriptors);
 	
@@ -79,58 +83,57 @@ int main(int argc, char * argv[]) {
 		fprintf(stderr, "Listen failed\n");
 		exit(-1);
 	}
+	
+	
     /* connection handling loop: wait to accept connection */
 
     while (1) {
 	
-	/* create read list */
-	
-	int counter=0;
-	int new_fd=0;
-	/* do a select */
-	FD_SET(listen_fd,&descriptors);
-	if(minet_select(total_fds+1,&descriptors,NULL,NULL,NULL)<0){
-		fprintf(stderr,"Select error");
-		exit(-1);
-	}
-
-	
-
-	/* process sockets that are ready */
-	for(counter=0;counter<=total_fds;counter++){
+		/* create read list */
+		int counter=0;
+		int new_fd=0;
+		
+		/* do a select */
+		FD_SET(listen_fd,&descriptors);
 		if(minet_select(total_fds+1,&descriptors,NULL,NULL,NULL)<0){
 			fprintf(stderr,"Select error");
 			exit(-1);
 		}
-		/* for the accept socket, add accepted connection to connections */
-		if(FD_ISSET(counter,&descriptors)&&counter==listen_fd){
-printf("New socket!");
-fflush(stdout);
-			new_fd=minet_accept(listen_fd,NULL);
-			FD_SET(new_fd,&descriptors);
+
+		/* process sockets that are ready */
+		for(counter=0;counter<=total_fds;counter++){
+		
+			if(minet_select(total_fds+1,&descriptors,NULL,NULL,NULL)<0){
+				fprintf(stderr,"Select error");
+				exit(-1);
+			}
 			
-			if(new_fd>total_fds)
-				total_fds=new_fd;
-		}
-		/* for a connection socket, handle the connection */
-		else if(FD_ISSET(counter,&descriptors)&&counter!=listen_fd) {
+			/* for the accept socket, add accepted connection to connections */
+			if(FD_ISSET(counter,&descriptors)&&counter==listen_fd){
+				
+				/* Accept new connection */
+				new_fd=minet_accept(listen_fd,NULL);
+				FD_SET(new_fd,&descriptors);
+				
+				/* If connection accepted, update total connections */
+				if(new_fd>total_fds){
+					total_fds=new_fd;
+				}
+			}
+			/* for a connection socket, handle the connection */
+			else if(FD_ISSET(counter,&descriptors)&&counter!=listen_fd) {
 
-			rc = handle_connection(counter);
+				rc = handle_connection(counter);
 
-			FD_CLR(counter,&descriptors);
+				FD_CLR(counter,&descriptors);
+				
+			}
 			
-		}
-	}
-
-
-
+		}//END for loop
 	
+    }//END while loop
 	
-	
-	
-	
-    }
-}
+}//END main()
 
 int handle_connection(int sock) {
     bool ok = false;
@@ -161,6 +164,7 @@ int handle_connection(int sock) {
     /* parse request to get file name */
     /* Assumption: this is a GET request and filename contains no spaces*/
 	filename=strtok(buf,"GET ");
+	
     /* try opening the file */
 	if((fd = fopen(filename,"rb"))>0){
 		ok=true;
@@ -169,57 +173,61 @@ int handle_connection(int sock) {
 	else{
 		ok=false;
 	}
+	
     //* send response */
     if (ok) {
-	int total_written=0;
-	/* send headers */
-	if(minet_write(sock,(char *)ok_response_f,strlen(ok_response_f))<0){
-		fprintf(stderr,"Write failed\n");
-		exit(-1);
-	}
-	
-	/* send file */
-	//get file size
-	fseek(fd,0,SEEK_END);
-	f_size=ftell(fd);
-	fseek(fd,0,SEEK_SET);
-	
-	
-	
-	//read content from file to content buffer
-	if((content=(char*)malloc(f_size))==NULL){
-		fprintf(stderr,"Malloc failed\n");
-		exit(-1);
-	}
-	if(fread(content,f_size,1,fd)<0){
-		fprintf(stderr,"File read failed\n");
-		exit(-1);
-	}
-	fclose(fd);	
-
-	//write from content buffer to the current connection socket
-	while(total_written<f_size){
-		int change=total_written;
-		total_written+=minet_write(sock,content+total_written,BUFSIZE);
-		if(total_written<change){
-			fprintf(stderr,"Write to connection socket failed\n");
+		int total_written=0;
+		
+		/* send headers */
+		if(minet_write(sock,(char *)ok_response_f,strlen(ok_response_f))<0){
+			fprintf(stderr,"Write failed\n");
 			exit(-1);
 		}
-	}
-	
+		
+		/* send file */
+		
+		//get file size
+		fseek(fd,0,SEEK_END);
+		f_size=ftell(fd);
+		fseek(fd,0,SEEK_SET);
+		
+		//read content from file to content buffer
+		if((content=(char*)malloc(f_size))==NULL){
+			fprintf(stderr,"Malloc failed\n");
+			exit(-1);
+		}
+		if(fread(content,f_size,1,fd)<0){
+			fprintf(stderr,"File read failed\n");
+			exit(-1);
+		}
+		fclose(fd);	
 
-    } else {
-	// send error response
-	if(minet_write(sock,(char*)notok_response,strlen(notok_response))<0){
-		fprintf(stderr,"Write failed\n");
-		exit(-1);
-	}
+		//write from content buffer to the current connection socket
+		while(total_written<f_size){
+			int change=total_written;
+			
+			//Write and keep tally of total written content
+			total_written += minet_write(sock,content+total_written,BUFSIZE);
+			
+			if(total_written<change){
+				fprintf(stderr,"Write to connection socket failed\n");
+				exit(-1);
+			}
+		}//END while loop
+	
+    }//END if
+	else {
+		// send error response
+		if(minet_write(sock,(char*)notok_response,strlen(notok_response))<0){
+			fprintf(stderr,"Write failed\n");
+			exit(-1);
+		}
     }
 
     /* close socket and free space */
 	
 	minet_close(sock);
-  	//free(content);
+  	free(content);
     if (ok) {
 	return 0;
     } else {
