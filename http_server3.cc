@@ -48,6 +48,11 @@ void read_file(connection * con);
 void write_file(connection * con);
 
 int main(int argc, char * argv[]) {
+	struct sockaddr_in saddr;
+	char buf[BUFSIZE];
+	int listen_fd=-1;
+	int total_fds=0;
+	fd_set descriptors;
     int server_port = -1;
 
     /* parse command line args */
