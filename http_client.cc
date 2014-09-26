@@ -147,6 +147,8 @@ int main(int argc, char * argv[]) {
 		free(content);
 	}
     /*close socket and deinitialize */
+	minet_close(socket);
+	minet_deinit();
 	
     if (ok) {
 	return 0;

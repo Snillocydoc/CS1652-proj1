@@ -179,6 +179,7 @@ int handle_connection(int sock) {
     }
     
     /* close socket and free space */
+	minet_close(sock);
   
     if (ok) {
 	return 0;

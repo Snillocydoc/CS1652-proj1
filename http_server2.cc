@@ -88,17 +88,24 @@ int main(int argc, char * argv[]) {
 	int counter=0;
 	int new_fd=0;
 	/* do a select */
+	FD_SET(listen_fd,&descriptors);
+	if(minet_select(total_fds+1,&descriptors,NULL,NULL,NULL)<0){
+		fprintf(stderr,"Select error");
+		exit(-1);
+	}
 
 	
 
-	minet_select(total_fds+1,&descriptors,NULL,NULL,NULL);
-
 	/* process sockets that are ready */
 	for(counter=0;counter<=total_fds;counter++){
-
+		if(minet_select(total_fds+1,&descriptors,NULL,NULL,NULL)<0){
+			fprintf(stderr,"Select error");
+			exit(-1);
+		}
 		/* for the accept socket, add accepted connection to connections */
 		if(FD_ISSET(counter,&descriptors)&&counter==listen_fd){
-
+printf("New socket!");
+fflush(stdout);
 			new_fd=minet_accept(listen_fd,NULL);
 			FD_SET(new_fd,&descriptors);
 			
@@ -106,10 +113,12 @@ int main(int argc, char * argv[]) {
 				total_fds=new_fd;
 		}
 		/* for a connection socket, handle the connection */
-		else if(FD_ISSET(counter,&descriptors)) {
+		else if(FD_ISSET(counter,&descriptors)&&counter!=listen_fd) {
 
 			rc = handle_connection(counter);
+
 			FD_CLR(counter,&descriptors);
+			
 		}
 	}
 
@@ -142,12 +151,13 @@ int handle_connection(int sock) {
 	"<html><body bgColor=black text=white>\n"		\
 	"<h2>404 FILE NOT FOUND</h2>\n"				\
 	"</body></html>\n";
-    
+   
     /* first read loop -- get request and headers*/
-	if(minet_read(sock,buf,BUFSIZE)<=0){
+	if(minet_read(sock,buf,BUFSIZE)<0){
 		fprintf(stderr, "Read failed\n");
 		exit(-1);
 	}
+
     /* parse request to get file name */
     /* Assumption: this is a GET request and filename contains no spaces*/
 	filename=strtok(buf,"GET ");
@@ -199,6 +209,7 @@ int handle_connection(int sock) {
 			exit(-1);
 		}
 	}
+	
 
     } else {
 	// send error response
@@ -210,7 +221,8 @@ int handle_connection(int sock) {
 
     /* close socket and free space */
 	
-  
+	minet_close(sock);
+  	//free(content);
     if (ok) {
 	return 0;
     } else {
